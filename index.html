@@ -126,7 +126,9 @@
         document.querySelector('#reset').addEventListener('click', function () {
             reset()
         })
-
+        document.querySelector('#content').addEventListener('touchmove', function (e) {
+            e.preventDefault()
+        })
 
 
 
