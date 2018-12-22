@@ -87,12 +87,13 @@
         <button id="start">开始游戏</button>
         <button id="reset">重置</button>
     </div>
+    <div style="margin-top:5px" id="count"></div>
     <div style="margin-top:5px">
         游戏说明：拖动滑块，避免和小球碰撞
     </div>
 
     <script>
-        var timer, speedX, speedY, gameOver;
+        var startTimer, speedX, speedY, gameOver,count,countTimer;
         var isMobile = /Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent);
         var contentDom = document.querySelector('#content');
         var content = {
@@ -104,7 +105,7 @@
         var rectB = document.querySelector('#recB');
         var rectL = document.querySelector('#recL');
         var rectDomList = [rectT, rectR, rectB, rectL];
-
+        var countDom = document.querySelector('#count');
         var ballDom = document.querySelector('.ball');
         var ball = {
             w: ballDom.clientWidth,
@@ -124,7 +125,7 @@
         }
         document.querySelector('#start').addEventListener('click', function () {
             reset();
-            start()
+            start();
         })
         document.querySelector('#reset').addEventListener('click', function () {
             reset()
@@ -139,7 +140,9 @@
             gameOver = false;
             speedX = 2;
             speedY = 3;
-            timer = setInterval(function () {
+            count=0;
+            countFn()
+            startTimer = setInterval(function () {
                 var offsetTop = ballDom.offsetTop;
                 var offsetLeft = ballDom.offsetLeft;
 
@@ -153,17 +156,25 @@
                 }
                 ballDom.style.top = offsetTop + speedY + 'px';
                 ballDom.style.left = offsetLeft + speedX + 'px';
-
                 rectDomList.forEach((e, i) => {
                     finalDetect(e)
                 })
-            }, 20)
+            }, 20);
         }
 
         function reset() {
             ballDom.style.top = content.h / 2 - ball.h / 2 + 'px';
             ballDom.style.left = content.w / 2 - ball.w / 2 + 'px';
-            clearInterval(timer)
+            clearInterval(startTimer);
+            clearInterval(countTimer);
+            document.querySelector('#count').style.display='none'
+        }
+        function countFn(){
+            document.querySelector('#count').style.display='block';
+            countDom.innerHTML = '你已经坚持了' +  '0秒';
+            countTimer = setInterval(()=>{
+                countDom.innerHTML = '你已经坚持了' + ++count + '秒'
+            },1000)
         }
         //碰撞检测
         function detectCollision(rect, circle) {
@@ -210,12 +221,14 @@
             }
             if (detectCollision(rect, circle)) {
                 //console.log('pppp碰到了');
-                clearInterval(timer);
-                alert('游戏结束');
+                clearInterval(startTimer);
+                clearInterval(countTimer);
                 gameOver = true;
+                alert('游戏结束');
+                
                 setTimeout(() => {
                     reset()
-                }, 1000);
+                }, 2500);
             }
         }
         //绑定矩形拖动事件
