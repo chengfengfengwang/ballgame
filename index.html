@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; user-scalable=no;">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        #content {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 1px solid #333;
+        }
+
+        .ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: blueviolet;
+            border-radius: 50%;
+        }
+
+        .rect {
+            position: absolute;
+            background-color: rgba(90, 109, 239, .6);
+        }
+
+        .rect:hover {
+            cursor: pointer;
+            background-color: rgba(90, 109, 239, .9)
+        }
+
+        .rect.top {
+            width: 100px;
+            height: 40px;
+            top: 0;
+            left: 50px;
+        }
+
+        .rect.right {
+            width: 40px;
+            height: 100px;
+            bottom: 0;
+            right: 0px;
+        }
+
+        .rect.bottom {
+            width: 100px;
+            height: 40px;
+            bottom: 0;
+            left: 50px;
+        }
+
+        .rect.left {
+            width: 40px;
+            height: 100px;
+            bottom: 0;
+            left: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content" draggable="false">
+        <div class="ball"></div>
+        <div id="recT" class="rect top tb" draggable="false"></div>
+        <div id="recR" class="rect right lr" draggable="false"></div>
+        <div id="recB" class="rect bottom tb" draggable="false"></div>
+        <div id="recL" class="rect left lr" draggable="false"></div>
+    </div>
+    <div style="margin-top:5px">
+        <button id="start">开始游戏</button>
+        <button id="reset">重置</button>
+    </div>
+
+    <script>
+        var timer, speedX, speedY, gameOver;
+        var isMobile = /Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent);
+        var contentDom = document.querySelector('#content');
+        var content = {
+            w: contentDom.clientWidth,
+            h: contentDom.clientHeight,
+        }
+        var rectT = document.querySelector('#recT');
+        var rectR = document.querySelector('#recR');
+        var rectB = document.querySelector('#recB');
+        var rectL = document.querySelector('#recL');
+        var rectDomList = [rectT, rectR, rectB, rectL];
+
+        var ballDom = document.querySelector('.ball');
+        var ball = {
+            w: ballDom.clientWidth,
+            h: ballDom.clientHeight,
+            x: ballDom.offsetLeft,
+            y: ballDom.offsetTop
+        };
+        var maxWidth = content.w - ball.w;
+        var maxHeight = content.h - ball.h;
+
+
+        reset()
+        if (isMobile) {
+            bindRectEventMobile()
+        } else {
+            bindRectEvent();
+        }
+        document.querySelector('#start').addEventListener('click', function () {
+            reset();
+            start()
+        })
+        document.querySelector('#reset').addEventListener('click', function () {
+            reset()
+        })
+
+
+
+
+        function start() {
+            gameOver = false;
+            speedX = 2;
+            speedY = 3;
+            timer = setInterval(function () {
+                var offsetTop = ballDom.offsetTop;
+                var offsetLeft = ballDom.offsetLeft;
+
+                if (offsetLeft > maxWidth || offsetLeft < 0) {
+                    console.log('碰到右面了');
+                    speedX = -speedX
+                }
+                if (offsetTop >= maxHeight || offsetTop < 0) {
+                    console.log('碰到下面了');
+                    speedY = -speedY
+                }
+                ballDom.style.top = offsetTop + speedY + 'px';
+                ballDom.style.left = offsetLeft + speedX + 'px';
+
+                rectDomList.forEach((e, i) => {
+                    finalDetect(e)
+                })
+            }, 20)
+        }
+
+        function reset() {
+            ballDom.style.top = content.h / 2 - ball.h / 2 + 'px';
+            ballDom.style.left = content.w / 2 - ball.w / 2 + 'px';
+            clearInterval(timer)
+        }
+        //碰撞检测
+        function detectCollision(rect, circle) {
+            var cx, cy
+
+            if (circle.x < rect.x) {
+                cx = rect.x
+            } else if (circle.x > rect.x + rect.w) {
+                cx = rect.x + rect.w
+            } else {
+                cx = circle.x
+            }
+
+            if (circle.y < rect.y) {
+                cy = rect.y
+            } else if (circle.y > rect.y + rect.h) {
+                cy = rect.y + rect.h
+            } else {
+                cy = circle.y
+            }
+
+            if (distance(circle.x, circle.y, cx, cy) < circle.r) {
+                return true
+            }
+
+            return false
+        }
+        //求得两点间的距离
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+        }
+        function finalDetect(rectDom) {
+            if (gameOver) { return }
+            var rect = {
+                h: rectDom.clientHeight,
+                w: rectDom.clientWidth,
+                x: rectDom.offsetLeft,
+                y: rectDom.offsetTop,
+            }
+            var circle = {
+                r: ballDom.clientWidth / 2,
+                x: ballDom.offsetLeft + ballDom.clientWidth / 2,
+                y: ballDom.offsetTop + ballDom.clientWidth / 2,
+            }
+            if (detectCollision(rect, circle)) {
+                //console.log('pppp碰到了');
+                clearInterval(timer);
+                alert('游戏结束');
+                gameOver = true;
+                setTimeout(() => {
+                    reset()
+                }, 1000);
+            }
+        }
+        //绑定矩形拖动事件
+        function bindRectEvent() {
+            for (let i = 0; i < rectDomList.length; i++) {
+                rectDomList[i].addEventListener('dragstart', function (e) {
+                    e.preventDefault()
+                })
+                if (i === 1 || i === 3) {
+                    rectDomList[i].onmousedown = function (m) {
+                        var disY = m.offsetY;
+                        document.onmousemove = function (dm) {
+                            finalDetect(rectDomList[i]);
+                            var t = dm.clientY - disY - contentDom.getBoundingClientRect().top + document.documentElement.scrollTop;;
+                            if (t > content.h - rectDomList[i].clientHeight) {
+                                rectDomList[i].style.top = content.h - rectDomList[i].clientHeight + 'px'
+                            } else if (t < 0) {
+                                rectDomList[i].style.top = 0 + 'px'
+                            } else {
+                                rectDomList[i].style.top = t + 'px'
+                            }
+                        }
+
+                        document.onmouseup = function () {
+                            document.onmousemove = null;
+                            document.onmouseup = null
+                        }
+                    }
+                } else {
+                    rectDomList[i].onmousedown = function (m) {
+                        var disX = m.offsetX
+                        document.onmousemove = function (dm) {
+                            finalDetect(rectDomList[i]);
+                            var l = dm.clientX - disX - contentDom.getBoundingClientRect().left + document.documentElement.scrollLeft;
+
+                            if (l > content.w - rectDomList[i].clientWidth) {
+                                rectDomList[i].style.left = content.w - rectDomList[i].clientWidth + 'px'
+                            } else if (l < 0) {
+                                rectDomList[i].style.left = 0 + 'px'
+                            } else {
+                                rectDomList[i].style.left = l + 'px'
+                            }
+                        }
+                        document.onmouseup = function () {
+                            document.onmousemove = null;
+                            document.onmouseup = null
+                        }
+                    }
+                }
+            }
+        }
+        //绑定矩形拖动事件--移动端
+        function bindRectEventMobile() {
+            for (let i = 0; i < rectDomList.length; i++) {
+                var currentX, currentY, moveX, moveY, rectDomX, rectDomY;
+                rectDomList[i].addEventListener('dragstart', function (e) {
+                    e.preventDefault()
+                })
+                if (i === 1 || i === 3) {
+                    rectDomList[i].addEventListener('touchstart', (e) => {
+                        currentX = e.touches[0].clientX;
+                        currentY = e.touches[0].clientY;
+                        rectDomY = rectDomList[i].offsetTop;
+                    });
+                    rectDomList[i].addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        moveX = e.touches[0].clientX - currentX;
+                        moveY = e.touches[0].clientY - currentY;
+                        var Yindex = rectDomY + moveY;
+                        if (Yindex < 0) {
+                            rectDomList[i].style.top = 0 + 'px';
+                        } else if (Yindex > (content.h - rectDomList[i].offsetHeight)) {
+                            rectDomList[i].style.top = content.h - rectDomList[i].offsetHeight + 'px';
+                        } else {
+                            rectDomList[i].style.top = Yindex + 'px';
+                        }
+                    })
+                } else {
+                    rectDomList[i].addEventListener('touchstart', (e) => {
+                        currentX = e.touches[0].clientX;
+                        currentY = e.touches[0].clientY;
+                        rectDomX = rectDomList[i].offsetLeft;
+                    });
+                    rectDomList[i].addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        moveX = e.touches[0].clientX - currentX;
+                        moveY = e.touches[0].clientY - currentY;
+                        var Xindex = rectDomX + moveX;
+                        if (Xindex < 0) {
+                            rectDomList[i].style.left = 0 + 'px';
+                        } else if (Xindex > (content.w - rectDomList[i].offsetWidth)) {
+                            rectDomList[i].style.left = content.w - rectDomList[i].offsetWidth + 'px';
+                        } else {
+                            rectDomList[i].style.left = Xindex + 'px';
+                        }
+                    })
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
